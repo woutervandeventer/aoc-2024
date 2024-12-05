@@ -5,14 +5,18 @@ import (
 	"testing"
 )
 
-func TestCountCorrectMiddlePageNos(t *testing.T) {
+func TestSumAllMiddlePageNos(t *testing.T) {
 	f, err := os.Open("example.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { f.Close() })
 	_ = f
-	if got := countCorrectMiddlePageNos(f); got != 143 {
-		t.Errorf("got %d want 143", got)
+	correct, incorrect := sumAllMiddlePageNos(f)
+	if correct != 143 {
+		t.Errorf("got %d want 143", correct)
+	}
+	if incorrect != 123 {
+		t.Errorf("got %d want 123", incorrect)
 	}
 }

@@ -11,10 +11,11 @@ import (
 )
 
 func main() {
-	fmt.Println(countCorrectMiddlePageNos(os.Stdin))
+	correct, incorrect := sumAllMiddlePageNos(os.Stdin)
+	fmt.Printf("correct: %d, incorrect: %d\n", correct, incorrect)
 }
 
-func countCorrectMiddlePageNos(r io.Reader) (count int) {
+func sumAllMiddlePageNos(r io.Reader) (correct, incorrect int) {
 	// Read the rules
 	rules := make(map[string]struct{ before, after []string })
 	scanner := bufio.NewScanner(r)
@@ -35,9 +36,6 @@ func countCorrectMiddlePageNos(r io.Reader) (count int) {
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
-	for page, rule := range rules {
-		fmt.Printf("page %s should come before: %v and after %v\n", page, rule.before, rule.after)
-	}
 
 	// Read the updates
 	var updates [][]string
@@ -48,30 +46,42 @@ func countCorrectMiddlePageNos(r io.Reader) (count int) {
 		panic(err)
 	}
 
-	var middlePages []string
-currentupdate:
+	var correctUpdates, incorrectUpdates [][]string
+Updates:
 	for _, update := range updates {
 		for i, page := range update {
 			for j := i + 1; j < len(update); j++ {
 				otherPage := update[j]
 				rulesForPage, rulesForOtherPage := rules[page], rules[otherPage]
 				if !slices.Contains(rulesForPage.before, otherPage) || !slices.Contains(rulesForOtherPage.after, page) {
-					fmt.Printf("update %v is not valid\n", update)
-					continue currentupdate
+					incorrectUpdates = append(incorrectUpdates, update)
+					continue Updates
 				}
 			}
 		}
-		fmt.Printf("update %v is valid\n", update)
-		middlePages = append(middlePages, update[len(update)/2])
+		correctUpdates = append(correctUpdates, update)
 	}
 
-	for _, page := range middlePages {
-		i, err := strconv.Atoi(page)
+	// Sort incorrect updates using the rules
+	for _, update := range incorrectUpdates {
+		slices.SortFunc(update, func(a, b string) int {
+			if slices.Contains(rules[a].before, b) || slices.Contains(rules[b].after, a) {
+				return -1
+			}
+			return 1
+		})
+	}
+
+	return sumMiddlePageNos(correctUpdates), sumMiddlePageNos(incorrectUpdates)
+}
+
+func sumMiddlePageNos(updates [][]string) (count int) {
+	for _, update := range updates {
+		i, err := strconv.Atoi(update[len(update)/2])
 		if err != nil {
 			panic(err)
 		}
 		count += i
 	}
-
 	return count
 }
