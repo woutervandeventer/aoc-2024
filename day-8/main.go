@@ -23,25 +23,44 @@ func uniqueAntinodes(input io.Reader) int {
 		}
 	}
 	antinodes := make(map[position]bool)
-	for _, positions := range antennasByFreq {
-		for i, curr := range positions {
-			for j := i + 1; j < len(positions); j++ {
-				next := positions[j]
-				node1 := position{x: curr.x - (next.x - curr.x), y: curr.y - (next.y - curr.y)}
-				if m.withinBounds(node1) {
-					antinodes[node1] = true
-				}
-				node2 := position{x: next.x + (next.x - curr.x), y: next.y + (next.y - curr.y)}
-				if m.withinBounds(node2) {
-					antinodes[node2] = true
-				}
+	for _, antennas := range antennasByFreq {
+		for i := range antennas {
+			for j := i + 1; j < len(antennas); j++ {
+				a, b := antennas[i], antennas[j]
+				nextRec(a, b, func(p position) bool {
+					within := m.withinBounds(p)
+					if within {
+						antinodes[p] = true
+					}
+					return within
+				})
+				nextRec(b, a, func(p position) bool {
+					within := m.withinBounds(p)
+					if within {
+						antinodes[p] = true
+					}
+					return within
+				})
+				antinodes[a], antinodes[b] = true, true
 			}
 		}
 	}
 	for p := range antinodes {
-		m[p.y][p.x] = '#'
+		if char := m[p.y][p.x]; char == '.' {
+			m[p.y][p.x] = '#'
+		}
 	}
 	return len(antinodes)
+}
+
+func nextRec(a, b position, cont func(position) bool) {
+	if next := nextAntiNode(a, b); cont(next) {
+		nextRec(b, next, cont)
+	}
+}
+
+func nextAntiNode(a, b position) position {
+	return position{x: b.x + (b.x - a.x), y: b.y + (b.y - a.y)}
 }
 
 type cityMap [][]byte
@@ -51,6 +70,10 @@ func (m cityMap) withinBounds(p position) bool {
 }
 
 type position struct{ x, y int }
+
+func (p position) String() string {
+	return fmt.Sprintf("x=%d, y=%d", p.x, p.y)
+}
 
 func newCityMap(r io.Reader) (m cityMap) {
 	scanner := bufio.NewScanner(r)
