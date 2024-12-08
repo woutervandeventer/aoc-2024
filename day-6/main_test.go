@@ -16,3 +16,15 @@ func TestDistinctPositions(t *testing.T) {
 		t.Fatalf("got %d want %d", got, want)
 	}
 }
+
+func TestObstructionPositions(t *testing.T) {
+	f, err := os.Open("example.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { f.Close() })
+	want := 6
+	if got := obstructionPositions(f); got != want {
+		t.Fatalf("got %d want %d", got, want)
+	}
+}

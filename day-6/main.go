@@ -17,9 +17,46 @@ const (
 
 type positionMap [][]byte
 
+func newPositionMap(r io.Reader) (m positionMap) {
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		// scanner.Bytes() does not allocate, which lead to a nasty bug!
+		m = append(m, append([]byte{}, scanner.Bytes()...))
+	}
+	if err := scanner.Err(); err != nil {
+		panic(err)
+	}
+	return m
+}
+
+type position struct{ x, y int }
+
+func (p position) String() string { return fmt.Sprintf("x: %d, y: %d", p.x, p.y) }
+
 type guard struct {
-	x, y int
-	dir  direction
+	position
+	dir direction
+}
+
+func findGuard(m positionMap) guard {
+	for y, row := range m {
+		for x, pos := range row {
+			if dir, ok := isGuard(pos); ok {
+				return guard{
+					position: position{x: x, y: y},
+					dir:      dir,
+				}
+			}
+		}
+	}
+	panic("guard not found")
+}
+
+func isGuard(b byte) (direction, bool) {
+	if d := direction(b); d == directionUp || d == directionRight || d == directionDown || d == directionLeft {
+		return d, true
+	}
+	return 0, false
 }
 
 func (g *guard) walk(m positionMap) {
@@ -67,6 +104,10 @@ func (g *guard) peekObstacle(m positionMap) bool {
 	}
 }
 
+func (g *guard) onTheMap(m positionMap) bool {
+	return g.x >= 0 && g.x < len(m[g.x]) && g.y >= 0 && g.y < len(m)
+}
+
 func (g *guard) turnRight() {
 	switch g.dir {
 	case directionUp:
@@ -81,7 +122,7 @@ func (g *guard) turnRight() {
 }
 
 func (g *guard) String() string {
-	return fmt.Sprintf("guard at x: %d, y: %d, facing %s", g.x, g.y, g.dir)
+	return fmt.Sprintf("guard at %s, facing %s", g.position, g.dir)
 }
 
 type direction byte
@@ -94,56 +135,52 @@ func main() {
 	fmt.Println(distinctPositions(os.Stdin))
 }
 
-func distinctPositions(input io.Reader) (count int) {
-	var m positionMap
-	var g guard
-	scanner := bufio.NewScanner(input)
-	for scanner.Scan() {
-		// scanner.Bytes() does not allocate, which lead to a nasty bug!
-		m = append(m, append([]byte{}, scanner.Bytes()...))
-	}
-	if err := scanner.Err(); err != nil {
-		panic(err)
-	}
-
-	// find the guard
-Rows:
-	for y, row := range m {
-		for x, pos := range row {
-			if dir, ok := isGuard(pos); ok {
-				g.x = x
-				g.y = y
-				g.dir = dir
-				break Rows
-			}
-		}
-	}
+func distinctPositions(input io.Reader) int {
+	m := newPositionMap(input)
+	g := findGuard(m)
 
 	// Walk the guard off the map and keep track of visited positions
-	visited := make(map[int]map[int]bool)
-	for guardOnTheMap(g, m) {
-		v, ok := visited[g.x]
-		if !ok {
-			v = make(map[int]bool)
-		}
-		v[g.y] = true
-		visited[g.x] = v
+	visited := make(map[position]bool)
+	for g.onTheMap(m) {
+		visited[g.position] = true
 		g.walk(m)
 	}
-	for _, v := range visited {
-		count += len(v)
+
+	return len(visited)
+}
+
+func obstructionPositions(input io.Reader) (count int) {
+	m := newPositionMap(input)
+	g := findGuard(m)
+
+	visited := make(map[position]direction)
+	for g.onTheMap(m) {
+		// check if we've been here before, and if the direction was our direction turned to the right
+		if dir, seen := visited[g.position]; seen {
+			fmt.Println("we have been at", g.position)
+			switch g.dir {
+			case directionUp:
+				if dir == directionRight {
+					count++
+				}
+			case directionRight:
+				if dir == directionDown {
+					count++
+				}
+			case directionDown:
+				if dir == directionLeft {
+					count++
+				}
+			case directionLeft:
+				if dir == directionUp {
+					count++
+				}
+			}
+		} else {
+			visited[g.position] = g.dir
+		}
+		g.walk(m)
 	}
 
 	return count
-}
-
-func isGuard(b byte) (direction, bool) {
-	if d := direction(b); d == directionUp || d == directionRight || d == directionDown || d == directionLeft {
-		return d, true
-	}
-	return 0, false
-}
-
-func guardOnTheMap(g guard, m positionMap) bool {
-	return g.x >= 0 && g.x < len(m[g.x]) && g.y >= 0 && g.y < len(m)
 }
