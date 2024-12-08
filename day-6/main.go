@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -15,6 +16,57 @@ const (
 	directionLeft  = direction('<')
 )
 
+func main() {
+	switch os.Args[1] {
+	case "1":
+		fmt.Println(distinctPositions(os.Stdin))
+	case "2":
+		fmt.Println(obstructionPositions(os.Stdin))
+	}
+}
+
+func distinctPositions(input io.Reader) int {
+	m := newPositionMap(input)
+	g := findGuard(m)
+
+	// Walk the guard off the map and keep track of visited positions
+	visited := make(map[position]bool)
+	for m.withinBounds(g.position) {
+		visited[g.position] = true
+		g.walk(m)
+	}
+
+	return len(visited)
+}
+
+func obstructionPositions(input io.Reader) (count int) {
+	m := newPositionMap(input)
+	g := findGuard(m)
+
+	var temp positionMap
+	for _, row := range m {
+		temp = append(temp, append([]byte{}, row...))
+	}
+
+	visited := make(map[position]bool)
+	for m.withinBounds(g.position) {
+		m.lookAhead(g.position, turnRight(g.dir), func(curr, next position) {
+			if m.charAt(next) == obstacle && visited[curr] {
+				if infront := nextPosition(g.position, g.dir); m.withinBounds(infront) && m.charAt(infront) != obstacle {
+					count++
+					temp[infront.y][infront.x] = '0'
+				}
+			}
+		})
+		visited[g.position] = true
+		g.walk(m)
+	}
+
+	fmt.Println(temp)
+
+	return count
+}
+
 type positionMap [][]byte
 
 func newPositionMap(r io.Reader) (m positionMap) {
@@ -27,6 +79,24 @@ func newPositionMap(r io.Reader) (m positionMap) {
 		panic(err)
 	}
 	return m
+}
+
+func (m positionMap) String() string {
+	return string(bytes.Join(m, []byte("\n")))
+}
+
+func (m positionMap) charAt(p position) byte {
+	return m[p.y][p.x]
+}
+
+func (m positionMap) lookAhead(curr position, dir direction, fn func(curr, next position)) {
+	for next := nextPosition(curr, dir); m.withinBounds(next); curr, next = next, nextPosition(next, dir) {
+		fn(curr, next)
+	}
+}
+
+func (m positionMap) withinBounds(p position) bool {
+	return p.x >= 0 && p.x < len(m[0]) && p.y >= 0 && p.y < len(m)
 }
 
 type position struct{ x, y int }
@@ -61,20 +131,25 @@ func isGuard(b byte) (direction, bool) {
 
 func (g *guard) walk(m positionMap) {
 	if g.peekObstacle(m) {
-		g.turnRight()
+		g.dir = turnRight(g.dir)
 		g.walk(m)
 		return
 	}
-	switch g.dir {
+	g.position = nextPosition(g.position, g.dir)
+}
+
+func nextPosition(p position, dir direction) position {
+	switch dir {
 	case directionUp:
-		g.y--
+		p.y--
 	case directionRight:
-		g.x++
+		p.x++
 	case directionDown:
-		g.y++
+		p.y++
 	case directionLeft:
-		g.x--
+		p.x--
 	}
+	return p
 }
 
 func (g *guard) peekObstacle(m positionMap) bool {
@@ -104,20 +179,18 @@ func (g *guard) peekObstacle(m positionMap) bool {
 	}
 }
 
-func (g *guard) onTheMap(m positionMap) bool {
-	return g.x >= 0 && g.x < len(m[g.x]) && g.y >= 0 && g.y < len(m)
-}
-
-func (g *guard) turnRight() {
-	switch g.dir {
+func turnRight(dir direction) direction {
+	switch dir {
 	case directionUp:
-		g.dir = directionRight
+		return directionRight
 	case directionRight:
-		g.dir = directionDown
+		return directionDown
 	case directionDown:
-		g.dir = directionLeft
+		return directionLeft
 	case directionLeft:
-		g.dir = directionUp
+		return directionUp
+	default:
+		panic("invalid dir")
 	}
 }
 
@@ -129,58 +202,4 @@ type direction byte
 
 func (d direction) String() string {
 	return string(d)
-}
-
-func main() {
-	fmt.Println(distinctPositions(os.Stdin))
-}
-
-func distinctPositions(input io.Reader) int {
-	m := newPositionMap(input)
-	g := findGuard(m)
-
-	// Walk the guard off the map and keep track of visited positions
-	visited := make(map[position]bool)
-	for g.onTheMap(m) {
-		visited[g.position] = true
-		g.walk(m)
-	}
-
-	return len(visited)
-}
-
-func obstructionPositions(input io.Reader) (count int) {
-	m := newPositionMap(input)
-	g := findGuard(m)
-
-	visited := make(map[position]direction)
-	for g.onTheMap(m) {
-		// check if we've been here before, and if the direction was our direction turned to the right
-		if dir, seen := visited[g.position]; seen {
-			fmt.Println("we have been at", g.position)
-			switch g.dir {
-			case directionUp:
-				if dir == directionRight {
-					count++
-				}
-			case directionRight:
-				if dir == directionDown {
-					count++
-				}
-			case directionDown:
-				if dir == directionLeft {
-					count++
-				}
-			case directionLeft:
-				if dir == directionUp {
-					count++
-				}
-			}
-		} else {
-			visited[g.position] = g.dir
-		}
-		g.walk(m)
-	}
-
-	return count
 }
