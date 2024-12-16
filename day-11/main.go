@@ -9,23 +9,52 @@ import (
 )
 
 func main() {
-	fmt.Println(stones(os.Stdin, 25))
+	fmt.Println(stones(readStones(os.Stdin), 75))
 }
 
-func stones(input io.Reader, blinks int) int {
-	_, _ = input, blinks
-	stones := readStones(input)
-	for range blinks {
-		var newStones []stone
-		for _, s := range stones {
-			newStones = append(newStones, s.transform()...)
-		}
-		stones = newStones
+func stones(stones []stone, blinks int) (count int) {
+	type problem struct {
+		stone  stone
+		blinks int
 	}
-	return len(stones)
+	solutions := make(map[problem]int)
+
+	var transform func(stone, int) int
+	transform = func(s stone, blinks int) (result int) {
+		if blinks <= 0 {
+			return 1
+		}
+		if solution, ok := solutions[problem{stone: s, blinks: blinks}]; ok {
+			return solution
+		}
+		defer func() {
+			solutions[problem{s, blinks}] = result
+		}()
+		if s == "0" {
+			return transform("1", blinks-1)
+		}
+		if len(s)%2 == 0 {
+			right := s[len(s)/2:]
+			for strings.HasPrefix(right, "0") && len(right) > 1 {
+				right = strings.TrimPrefix(right, "0")
+			}
+			return transform(s[:len(s)/2], blinks-1) + transform(right, blinks-1)
+		}
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			panic(err)
+		}
+		return transform(strconv.Itoa(n*2024), blinks-1)
+	}
+
+	for _, s := range stones {
+		count += transform(s, blinks)
+	}
+
+	return count
 }
 
-type stone int
+type stone = string
 
 func readStones(r io.Reader) []stone {
 	buf := new(strings.Builder)
@@ -33,31 +62,5 @@ func readStones(r io.Reader) []stone {
 	if err != nil {
 		panic(err)
 	}
-	var stones []stone
-	for _, s := range strings.Split(strings.TrimSpace(buf.String()), " ") {
-		n, err := strconv.Atoi(s)
-		if err != nil {
-			panic(err)
-		}
-		stones = append(stones, stone(n))
-	}
-	return stones
-}
-
-func (s stone) transform() []stone {
-	if s == 0 {
-		return []stone{1}
-	}
-	if str := strconv.Itoa(int(s)); len(str)%2 == 0 {
-		left, err := strconv.Atoi(str[:len(str)/2])
-		if err != nil {
-			panic(err)
-		}
-		right, err := strconv.Atoi(str[len(str)/2:])
-		if err != nil {
-			panic(err)
-		}
-		return []stone{stone(left), stone(right)}
-	}
-	return []stone{s * 2024}
+	return strings.Split(strings.TrimSpace(buf.String()), " ")
 }
