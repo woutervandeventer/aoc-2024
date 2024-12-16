@@ -9,7 +9,12 @@ import (
 )
 
 func main() {
-	fmt.Println(scores(os.Stdin))
+	switch os.Args[1] {
+	case "1":
+		fmt.Println(scores(os.Stdin))
+	case "2":
+		fmt.Println(ratings(os.Stdin))
+	}
 }
 
 func scores(input io.Reader) (total int) {
@@ -17,36 +22,23 @@ func scores(input io.Reader) (total int) {
 	heads := getTrailheads(m)
 
 	for _, h := range heads {
-		peaks := make(map[position]bool)
-		var findScores func(position)
-		findScores = func(p position) {
-			height := m.heightAtPos(p)
-			if height == 9 {
-				peaks[p] = true
-				return
-			}
-			left := position{x: p.x - 1, y: p.y}
-			if m.heightAtPos(left) == height+1 {
-				findScores(left)
-			}
-			right := position{x: p.x + 1, y: p.y}
-			if m.heightAtPos(right) == height+1 {
-				findScores(right)
-			}
-			up := position{x: p.x, y: p.y - 1}
-			if m.heightAtPos(up) == height+1 {
-				findScores(up)
-			}
-			down := position{x: p.x, y: p.y + 1}
-			if m.heightAtPos(down) == height+1 {
-				findScores(down)
-			}
-		}
-		findScores(h)
+		peaks := make(map[position]struct{})
+		m.findPeaks(h, func(peak position) { peaks[peak] = struct{}{} })
 		total += len(peaks)
 	}
 
 	return total
+}
+
+func ratings(input io.Reader) (sum int) {
+	m := readTopographicMap(input)
+	heads := getTrailheads(m)
+
+	for _, h := range heads {
+		m.findPeaks(h, func(position) { sum++ })
+	}
+
+	return sum
 }
 
 type topographicMap [][]int
@@ -75,6 +67,28 @@ func (m topographicMap) heightAtPos(p position) int {
 		return -1
 	}
 	return m[p.y][p.x]
+}
+
+func (m topographicMap) findPeaks(start position, peakAction func(peak position)) {
+	var climbr func(position)
+	climbr = func(p position) {
+		height := m.heightAtPos(p)
+		if height == 9 {
+			peakAction(p)
+			return
+		}
+		for _, next := range []position{
+			{x: p.x - 1, y: p.y},
+			{x: p.x + 1, y: p.y},
+			{x: p.x, y: p.y - 1},
+			{x: p.x, y: p.y + 1},
+		} {
+			if m.heightAtPos(next) == height+1 {
+				climbr(next)
+			}
+		}
+	}
+	climbr(start)
 }
 
 type position struct{ x, y int }
