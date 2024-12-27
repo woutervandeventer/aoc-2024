@@ -9,12 +9,15 @@ import (
 )
 
 const (
-	obstacle       = '#'
-	directionUp    = direction('^')
-	directionRight = direction('>')
-	directionDown  = direction('v')
-	directionLeft  = direction('<')
+	obstacle = '#'
+
+	directionUp    direction = '^'
+	directionRight direction = '>'
+	directionDown  direction = 'v'
+	directionLeft  direction = '<'
 )
+
+type direction byte
 
 func main() {
 	switch os.Args[1] {
@@ -179,6 +182,10 @@ func (g *guard) peekObstacle(m positionMap) bool {
 	}
 }
 
+func (g *guard) String() string {
+	return fmt.Sprintf("guard at %s, facing %s", g.position, g.dir)
+}
+
 func turnRight(dir direction) direction {
 	switch dir {
 	case directionUp:
@@ -193,12 +200,6 @@ func turnRight(dir direction) direction {
 		panic("invalid dir")
 	}
 }
-
-func (g *guard) String() string {
-	return fmt.Sprintf("guard at %s, facing %s", g.position, g.dir)
-}
-
-type direction byte
 
 func (d direction) String() string {
 	return string(d)
