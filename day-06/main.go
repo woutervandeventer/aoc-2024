@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"slices"
 )
 
 func main() {
@@ -28,19 +27,22 @@ func distinctPositions(input io.Reader) int {
 
 func obstructionPositions(input io.Reader) (count int) {
 	lab := readLab(input)
-	visitedDirections := make(map[point][]direction)
+	visitedDirections := make(map[point]direction)
 	lab.walkGuard(func(g guard) {
+		visitedDirections[g.position] = visitedDirections[g.position] | g.direction
 		peekdir := turnRight(g.direction)
-		for next := translate(g.position, peekdir); lab.withinBounds(next); next = translate(next, peekdir) {
-			if lab.isObstruction(next) {
-				break // Blocked by obstruction.
+		var peek func(curr, next point)
+		peek = func(curr, next point) {
+			if !lab.withinBounds(curr) {
+				return
 			}
-			if slices.Contains(visitedDirections[next], peekdir) {
+			if visitedDirections[curr]&turnRight(peekdir) != 0 && lab.isObstruction(next) {
 				count++
-				break
+				return
 			}
+			peek(next, translate(next, peekdir))
 		}
-		visitedDirections[g.position] = append(visitedDirections[g.position], g.direction)
+		peek(g.position, translate(g.position, peekdir))
 	})
 	return count
 }
@@ -73,7 +75,7 @@ func readLab(r io.Reader) lab {
 		if lab.width == 0 {
 			lab.width = len(row)
 		}
-		lab.height++
+		lab.height = y
 	}
 	if err := scanner.Err(); err != nil {
 		panic(err)
@@ -159,7 +161,7 @@ func translate(pt point, dir direction) point {
 }
 
 const (
-	directionUp direction = iota
+	directionUp direction = 1 << iota
 	directionRight
 	directionDown
 	directionLeft
