@@ -2,22 +2,11 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"os"
+	"slices"
 )
-
-const (
-	obstacle = '#'
-
-	directionUp    direction = '^'
-	directionRight direction = '>'
-	directionDown  direction = 'v'
-	directionLeft  direction = '<'
-)
-
-type direction byte
 
 func main() {
 	switch os.Args[1] {
@@ -29,178 +18,166 @@ func main() {
 }
 
 func distinctPositions(input io.Reader) int {
-	m := newPositionMap(input)
-	g := findGuard(m)
-
-	// Walk the guard off the map and keep track of visited positions
-	visited := make(map[position]bool)
-	for m.withinBounds(g.position) {
-		visited[g.position] = true
-		g.walk(m)
-	}
-
+	lab := readLab(input)
+	visited := make(map[point]struct{})
+	lab.walkGuard(func(g guard) {
+		visited[g.position] = struct{}{}
+	})
 	return len(visited)
 }
 
 func obstructionPositions(input io.Reader) (count int) {
-	m := newPositionMap(input)
-	g := findGuard(m)
-
-	var temp positionMap
-	for _, row := range m {
-		temp = append(temp, append([]byte{}, row...))
-	}
-
-	visited := make(map[position]bool)
-	for m.withinBounds(g.position) {
-		m.lookAhead(g.position, turnRight(g.dir), func(curr, next position) {
-			if m.charAt(next) == obstacle && visited[curr] {
-				if infront := nextPosition(g.position, g.dir); m.withinBounds(infront) && m.charAt(infront) != obstacle {
-					count++
-					temp[infront.y][infront.x] = '0'
-				}
+	lab := readLab(input)
+	visitedDirections := make(map[point][]direction)
+	lab.walkGuard(func(g guard) {
+		peekdir := turnRight(g.direction)
+		for next := translate(g.position, peekdir); lab.withinBounds(next); next = translate(next, peekdir) {
+			if lab.isObstruction(next) {
+				break // Blocked by obstruction.
 			}
-		})
-		visited[g.position] = true
-		g.walk(m)
-	}
-
-	fmt.Println(temp)
-
+			if slices.Contains(visitedDirections[next], peekdir) {
+				count++
+				break
+			}
+		}
+		visitedDirections[g.position] = append(visitedDirections[g.position], g.direction)
+	})
 	return count
 }
 
-type positionMap [][]byte
+type lab struct {
+	obstructions  map[point]struct{}
+	guard         guard
+	width, height int
+}
 
-func newPositionMap(r io.Reader) (m positionMap) {
+func readLab(r io.Reader) lab {
+	lab := lab{
+		obstructions: make(map[point]struct{}),
+	}
 	scanner := bufio.NewScanner(r)
-	for scanner.Scan() {
-		// scanner.Bytes() does not allocate, which lead to a nasty bug!
-		m = append(m, append([]byte{}, scanner.Bytes()...))
+	for y := 0; scanner.Scan(); y++ {
+		row := scanner.Text()
+		for x, r := range row {
+			p := point{x: x, y: y}
+			switch r {
+			case '#':
+				lab.obstructions[p] = struct{}{}
+			case '^':
+				lab.guard = guard{
+					position:  p,
+					direction: directionUp,
+				}
+			}
+		}
+		if lab.width == 0 {
+			lab.width = len(row)
+		}
+		lab.height++
 	}
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
-	return m
+	return lab
 }
 
-func (m positionMap) String() string {
-	return string(bytes.Join(m, []byte("\n")))
+// walkGuard calls fn until the guard has walked off the map.
+func (l *lab) walkGuard(fn func(guard)) {
+	var walkFn func()
+	walkFn = func() {
+		if l.guard.position.x >= l.width || l.guard.position.y >= l.height {
+			return
+		}
+		fn(l.guard)
+		next := translate(l.guard.position, l.guard.direction)
+		if l.isObstruction(next) {
+			l.guard.direction = turnRight(l.guard.direction)
+		} else {
+			l.guard.position = next
+		}
+		walkFn()
+	}
+	walkFn()
 }
 
-func (m positionMap) charAt(p position) byte {
-	return m[p.y][p.x]
+func (l *lab) isObstruction(pt point) bool {
+	_, ok := l.obstructions[pt]
+	return ok
 }
 
-func (m positionMap) lookAhead(curr position, dir direction, fn func(curr, next position)) {
-	for next := nextPosition(curr, dir); m.withinBounds(next); curr, next = next, nextPosition(next, dir) {
-		fn(curr, next)
+func (l *lab) withinBounds(pt point) bool {
+	return pt.x >= 0 && pt.x < l.width && pt.y >= 0 && pt.y < l.height
+}
+
+func (l *lab) draw() {
+	row := make([]rune, l.width)
+	for i := range row {
+		row[i] = '.'
+	}
+	canvas := make([][]rune, l.height)
+	for i := range canvas {
+		canvas[i] = append(make([]rune, 0, len(row)), row...)
+	}
+	for pt := range l.obstructions {
+		canvas[pt.y][pt.x] = '#'
+	}
+	switch l.guard.direction {
+	case directionUp:
+		canvas[l.guard.position.y][l.guard.position.x] = '^'
+	case directionRight:
+		canvas[l.guard.position.y][l.guard.position.x] = '>'
+	case directionDown:
+		canvas[l.guard.position.y][l.guard.position.x] = 'v'
+	case directionLeft:
+		canvas[l.guard.position.y][l.guard.position.x] = '<'
+	}
+	for _, row := range canvas {
+		fmt.Println(string(row))
 	}
 }
-
-func (m positionMap) withinBounds(p position) bool {
-	return p.x >= 0 && p.x < len(m[0]) && p.y >= 0 && p.y < len(m)
-}
-
-type position struct{ x, y int }
-
-func (p position) String() string { return fmt.Sprintf("x: %d, y: %d", p.x, p.y) }
 
 type guard struct {
-	position
-	dir direction
+	position  point
+	direction direction
 }
 
-func findGuard(m positionMap) guard {
-	for y, row := range m {
-		for x, pos := range row {
-			if dir, ok := isGuard(pos); ok {
-				return guard{
-					position: position{x: x, y: y},
-					dir:      dir,
-				}
-			}
-		}
-	}
-	panic("guard not found")
-}
+type point struct{ x, y int }
 
-func isGuard(b byte) (direction, bool) {
-	if d := direction(b); d == directionUp || d == directionRight || d == directionDown || d == directionLeft {
-		return d, true
-	}
-	return 0, false
-}
-
-func (g *guard) walk(m positionMap) {
-	if g.peekObstacle(m) {
-		g.dir = turnRight(g.dir)
-		g.walk(m)
-		return
-	}
-	g.position = nextPosition(g.position, g.dir)
-}
-
-func nextPosition(p position, dir direction) position {
+func translate(pt point, dir direction) point {
 	switch dir {
-	case directionUp:
-		p.y--
-	case directionRight:
-		p.x++
 	case directionDown:
-		p.y++
+		return point{x: pt.x, y: pt.y + 1}
 	case directionLeft:
-		p.x--
-	}
-	return p
-}
-
-func (g *guard) peekObstacle(m positionMap) bool {
-	switch g.dir {
-	case directionUp:
-		if g.y == 0 {
-			return false
-		}
-		return m[g.y-1][g.x] == obstacle
+		return point{x: pt.x - 1, y: pt.y}
 	case directionRight:
-		if g.x == len(m[g.x])-1 {
-			return false
-		}
-		return m[g.y][g.x+1] == obstacle
-	case directionDown:
-		if g.y == len(m)-1 {
-			return false
-		}
-		return m[g.y+1][g.x] == obstacle
-	case directionLeft:
-		if g.x == 0 {
-			return false
-		}
-		return m[g.y][g.x-1] == obstacle
+		return point{x: pt.x + 1, y: pt.y}
+	case directionUp:
+		return point{x: pt.x, y: pt.y - 1}
 	default:
-		panic("invalid guard direction: " + string(g.dir))
+		panic("invalid direction")
 	}
 }
 
-func (g *guard) String() string {
-	return fmt.Sprintf("guard at %s, facing %s", g.position, g.dir)
-}
+const (
+	directionUp direction = iota
+	directionRight
+	directionDown
+	directionLeft
+)
+
+type direction int
 
 func turnRight(dir direction) direction {
 	switch dir {
-	case directionUp:
-		return directionRight
-	case directionRight:
-		return directionDown
 	case directionDown:
 		return directionLeft
 	case directionLeft:
 		return directionUp
+	case directionRight:
+		return directionDown
+	case directionUp:
+		return directionRight
 	default:
-		panic("invalid dir")
+		panic("invalid direction")
 	}
-}
-
-func (d direction) String() string {
-	return string(d)
 }
