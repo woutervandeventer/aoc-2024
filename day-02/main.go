@@ -16,40 +16,65 @@ func main() {
 func safeReportsWithDampener(input io.Reader) (safe int) {
 	r := newReportScanner(input)
 	for r.scan() {
-		if isSafe(r.report()) {
+		if isSafeWithDampener(r.report()) {
 			safe++
 		}
 	}
 	return safe
 }
 
-func isSafe(report []int) bool {
-	var isSafeR func(tries int, report []int) bool
-	isSafeR = func(tries int, report []int) bool {
-		if tries == 0 {
-			return false
-		}
-		tries--
-		var asc bool
-		for i := 0; i < len(report)-1; i++ {
-			left, right := report[i], report[i+1]
-			currentlyAsc := right > left
-			if i == 0 {
-				asc = currentlyAsc
+func isSafeWithDampener(report []int) bool {
+	const (
+		_ = iota
+		ascending
+		descending
+	)
+
+	var isSafeSkipIndex func(skip int) bool
+	isSafeSkipIndex = func(skip int) bool {
+		var reportDirection int
+		var i, j int
+		for {
+			if i == skip {
+				i++
 			}
-			woleft := append(append([]int{}, report[:i]...), report[i+1:]...)
-			woright := append(append([]int{}, report[:i+1]...), report[i+2:]...)
+			j = i + 1
+			if j == skip {
+				j++
+			}
+			if j >= len(report) {
+				break
+			}
+			left, right := report[i], report[j]
+			allowedToSkip := skip == -1
 			if left == right || diff(left, right) > 3 {
-				return isSafeR(tries, woleft) || isSafeR(tries, woright)
+				if !allowedToSkip {
+					return false
+				}
+				return isSafeSkipIndex(i) || isSafeSkipIndex(j)
 			}
-			if asc != currentlyAsc {
-				woprev := append(append([]int{}, report[:i-1]...), report[i:]...)
-				return isSafeR(tries, woprev) || isSafeR(tries, woleft) || isSafeR(tries, woright)
+			var direction int
+			if right > left {
+				direction = ascending
+			} else {
+				direction = descending
 			}
+			if reportDirection == 0 {
+				reportDirection = direction
+			}
+			if direction != reportDirection {
+				if !allowedToSkip {
+					return false
+				}
+				// Skip the previous entry too, because that could fix the order.
+				return isSafeSkipIndex(i-1) || isSafeSkipIndex(i) || isSafeSkipIndex(j)
+			}
+			i++
 		}
 		return true
 	}
-	return isSafeR(2, report)
+
+	return isSafeSkipIndex(-1) // Don't skip any index at first.
 }
 
 func diff(a, b int) int {

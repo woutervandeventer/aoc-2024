@@ -8,4 +8,5 @@ import (
 
 func TestSafeReportsWithDampener(t *testing.T) {
 	aoc.TestSolution(t, aoc.OpenFile(t, "example.txt"), safeReportsWithDampener, 4)
+	aoc.TestSolution(t, aoc.OpenFile(t, "input.txt"), safeReportsWithDampener, 700)
 }
