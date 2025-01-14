@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"strconv"
@@ -36,16 +35,7 @@ func main() {
 	case 2:
 		fmt.Println(day2.SafeReportsWithDampener(input))
 	case 3:
-		b, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			panic(err)
-		}
-		switch part {
-		case 1:
-			fmt.Println(day3.AddMuls(string(b)))
-		case 2:
-			fmt.Println(day3.AddEnabledMuls(b))
-		}
+		fmt.Println(day3.AddMuls(os.Stdin))
 	case 4:
 	case 5:
 	case 6:
