@@ -16,12 +16,24 @@ func newParser(r io.Reader) parser {
 }
 
 func (p parser) parse() (pg program) {
+	enabled := true
 	for {
 		tok, _ := p.scanner.scan()
 		switch tok {
 		case eof:
 			return pg
+		case do:
+			if p.parseParens() {
+				enabled = true
+			}
+		case dont:
+			if p.parseParens() {
+				enabled = false
+			}
 		case mul:
+			if !enabled {
+				continue
+			}
 			m, ok := p.parseMul()
 			if !ok {
 				continue
@@ -29,6 +41,14 @@ func (p parser) parse() (pg program) {
 			pg.muls = append(pg.muls, m)
 		}
 	}
+}
+
+func (p parser) parseParens() bool {
+	if tok, _ := p.scanner.scan(); tok != lparen {
+		return false
+	}
+	tok, _ := p.scanner.scan()
+	return tok == rparen
 }
 
 func (p parser) parseMul() (multiplication, bool) {

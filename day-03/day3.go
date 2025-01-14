@@ -7,5 +7,5 @@ import (
 func AddMuls(input io.Reader) int {
 	parser := newParser(input)
 	program := parser.parse()
-	return program.calculateMultiplications()
+	return program.addMultiplications()
 }

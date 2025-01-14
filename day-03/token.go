@@ -11,4 +11,6 @@ const (
 	rparen
 	number
 	comma
+	do
+	dont
 )

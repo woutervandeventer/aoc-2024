@@ -24,7 +24,7 @@ func (s scanner) scan() (token, string) {
 	if ch == 0 {
 		return eof, ""
 	}
-	if isLetter(ch) {
+	if isIdentChar(ch) {
 		s.unread()
 		return s.readIdent()
 	}
@@ -53,7 +53,7 @@ func (s scanner) readIdent() (token, string) {
 		if ch == 0 {
 			break
 		}
-		if !isLetter(ch) {
+		if !isIdentChar(ch) {
 			s.unread()
 			break
 		}
@@ -63,6 +63,10 @@ func (s scanner) readIdent() (token, string) {
 	switch {
 	case strings.HasSuffix(literal, "mul"):
 		return mul, literal
+	case strings.HasSuffix(literal, "don't"):
+		return dont, literal
+	case strings.HasSuffix(literal, "do"):
+		return do, literal
 	default:
 		return corrupted, literal
 	}
@@ -98,8 +102,8 @@ func (s scanner) unread() {
 	}
 }
 
-func isLetter(r rune) bool {
-	return r >= 'a' && r <= 'z'
+func isIdentChar(r rune) bool {
+	return (r >= 'a' && r <= 'z') || r == '\''
 }
 
 func isNumber(r rune) bool {
