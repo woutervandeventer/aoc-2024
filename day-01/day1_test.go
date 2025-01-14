@@ -1,4 +1,4 @@
-package main
+package day1
 
 import (
 	"testing"
@@ -8,7 +8,7 @@ import (
 
 func TestTotalDistance(t *testing.T) {
 	f := aoc.OpenFile(t, "example.txt")
-	got := totalDistance(readLists(f))
+	got := TotalDistance(ReadLists(f))
 	want := 11
 	if got != want {
 		t.Errorf("got %d want %d", got, want)
@@ -17,7 +17,7 @@ func TestTotalDistance(t *testing.T) {
 
 func TestSimilarityScore(t *testing.T) {
 	f := aoc.OpenFile(t, "example.txt")
-	got := similarityScore(readLists(f))
+	got := SimilarityScore(ReadLists(f))
 	want := 31
 	if got != want {
 		t.Errorf("got %d want %d", got, want)

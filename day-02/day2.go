@@ -1,19 +1,13 @@
-package main
+package day2
 
 import (
 	"bufio"
-	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 )
 
-func main() {
-	fmt.Println(safeReportsWithDampener(os.Stdin))
-}
-
-func safeReportsWithDampener(input io.Reader) (safe int) {
+func SafeReportsWithDampener(input io.Reader) (safe int) {
 	r := newReportScanner(input)
 	for r.scan() {
 		if isSafeWithDampener(r.report()) {

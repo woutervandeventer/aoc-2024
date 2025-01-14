@@ -1,10 +1,7 @@
-package main
+package day3
 
 import (
 	"bytes"
-	"fmt"
-	"io"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -12,28 +9,14 @@ import (
 
 var mulrexp = regexp.MustCompile(`mul\([0-9]{1,3},[0-9]{1,3}\)`)
 
-func main() {
-	b, err := io.ReadAll(os.Stdin)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
-	switch os.Args[1] {
-	case "1":
-		fmt.Println(addMuls(string(b)))
-	case "2":
-		fmt.Println(addEnabledMuls(b))
-	}
-}
-
-func addMuls(input string) (result int) {
+func AddMuls(input string) (result int) {
 	for _, s := range mulrexp.FindAllString(input, -1) {
 		result += execMulStr(s)
 	}
 	return result
 }
 
-func addEnabledMuls(input []byte) (result int) {
+func AddEnabledMuls(input []byte) (result int) {
 	enabled := true
 	for i, b := range input {
 		switch b {
