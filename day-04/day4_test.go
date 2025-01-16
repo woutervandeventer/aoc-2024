@@ -1,4 +1,4 @@
-package main
+package day4
 
 import (
 	"strings"
@@ -10,6 +10,11 @@ func TestCountxmas(t *testing.T) {
 		input string
 		count int
 	}{
+		{
+			input: `
+XMAS`,
+			count: 1,
+		},
 		{
 			input: `
 ______X
@@ -71,13 +76,13 @@ MXMXAXMASX`,
 	}
 	for _, tc := range cases {
 		wonl, _ := strings.CutPrefix(tc.input, "\n")
-		if got := countxmas(wonl); got != tc.count {
+		if got := CountXmas(strings.NewReader(wonl)); got != tc.count {
 			t.Errorf("got %d want %d", got, tc.count)
 		}
 	}
 }
 
-func TestCountxMas(t *testing.T) {
+func TestCountXMas(t *testing.T) {
 	cases := []struct {
 		input string
 		count int
@@ -106,7 +111,7 @@ M.M.M.M.M.
 	}
 	for _, tc := range cases {
 		wonl, _ := strings.CutPrefix(tc.input, "\n")
-		if got := countxMas(wonl); got != tc.count {
+		if got := CountXMas(strings.NewReader(wonl)); got != tc.count {
 			t.Errorf("got %d want %d", got, tc.count)
 		}
 	}

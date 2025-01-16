@@ -9,6 +9,7 @@ import (
 	day1 "github.com/woutervandeventer/aoc-2024/day-01"
 	day2 "github.com/woutervandeventer/aoc-2024/day-02"
 	day3 "github.com/woutervandeventer/aoc-2024/day-03"
+	day4 "github.com/woutervandeventer/aoc-2024/day-04"
 )
 
 func main() {
@@ -37,6 +38,12 @@ func main() {
 	case 3:
 		fmt.Println(day3.AddMuls(os.Stdin))
 	case 4:
+		switch part {
+		case 1:
+			fmt.Println(day4.CountXmas(os.Stdin))
+		case 2:
+			fmt.Println(day4.CountXMas(os.Stdin))
+		}
 	case 5:
 	case 6:
 	case 7:
