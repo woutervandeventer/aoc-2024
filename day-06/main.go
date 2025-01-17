@@ -11,38 +11,60 @@ import (
 func DistinctGuardPositions(input io.Reader) int {
 	lab := readLab(input)
 	visited := make(map[point]struct{})
-	for lab.withinBounds(lab.guard.position) {
+	for ; lab.withinBounds(lab.guard.position); lab.moveGuard() {
 		visited[lab.guard.position] = struct{}{}
-		lab.moveGuard()
 	}
 	return len(visited)
 }
 
-func ObstructionPositions(input io.Reader) (count int) {
-	lab := readLab(input)
-	visitedDirections := make(map[point]direction)
-	lab.walkGuard(func(g guard) {
-		visitedDirections[g.position] = visitedDirections[g.position] | g.direction
-		peekdir := turnRight(g.direction)
-		var peek func(curr, next point)
-		peek = func(curr, next point) {
-			if !lab.withinBounds(curr) {
-				return
-			}
-			if visitedDirections[curr]&turnRight(peekdir) != 0 && lab.isObstruction(next) {
-				count++
-				return
-			}
-			peek(next, translate(next, peekdir))
+func ObstructionPositions(input io.Reader) int {
+	l := readLab(input)
+	obstructions := make(map[point]struct{})
+
+	for ; l.withinBounds(l.guard.position); l.moveGuard() {
+		next := translate(l.guard.position, l.guard.direction)
+		if !l.withinBounds(next) || l.isObstruction(next) {
+			continue
 		}
-		peek(g.position, translate(g.position, peekdir))
-	})
-	return count
+		if enterLoopWithObstacle(next, l) {
+			obstructions[next] = struct{}{}
+		}
+	}
+
+	return len(obstructions)
+}
+
+func enterLoopWithObstacle(obstacle point, l *lab) bool {
+	// Temporarily add the obstacle to the lab, to see where it sends the guard.
+	// The position of the guard has to be restored at the end of this test.
+	l.addObstruction(obstacle)
+	snapshot := l.guard
+	defer func() {
+		l.removeObstruction(obstacle)
+		l.guard = snapshot
+	}()
+
+	visitedDirections := make(map[point]direction)
+	for ; l.withinBounds(l.guard.position); l.moveGuard() {
+		// Check if the bit is set for the current direction of the guard. If so,
+		// we've entered a loop. If not, set it and continue
+		directions := visitedDirections[l.guard.position]
+		if directions&l.guard.direction != 0 {
+			return true
+		}
+		visitedDirections[l.guard.position] = directions | l.guard.direction
+	}
+
+	// The guard has walked off the map.
+	return false
 }
 
 type lab struct {
-	obstructions  map[point]struct{}
-	guard         guard
+	obstructions map[point]struct{}
+	guard        struct {
+		position  point
+		direction direction
+	}
 	width, height int
 }
 
@@ -61,12 +83,10 @@ func readLab(r io.Reader) *lab {
 			p := point{x: x, y: lab.height - 1}
 			switch ch {
 			case '#':
-				lab.obstructions[p] = struct{}{}
+				lab.addObstruction(p)
 			case '^':
-				lab.guard = guard{
-					position:  p,
-					direction: directionUp,
-				}
+				lab.guard.position = p
+				lab.guard.direction = directionUp
 			}
 		}
 	}
@@ -76,12 +96,12 @@ func readLab(r io.Reader) *lab {
 	return &lab
 }
 
-// walkGuard calls fn until the guard has walked off the map.
-func (l *lab) walkGuard(fn func(guard)) {
-	for l.withinBounds(l.guard.position) {
-		fn(l.guard)
-		l.moveGuard()
-	}
+func (l *lab) addObstruction(p point) {
+	l.obstructions[p] = struct{}{}
+}
+
+func (l *lab) removeObstruction(p point) {
+	delete(l.obstructions, p)
 }
 
 func (l *lab) moveGuard() {
@@ -123,11 +143,6 @@ func (l *lab) draw() {
 	fmt.Print(b.String())
 }
 
-type guard struct {
-	position  point
-	direction direction
-}
-
 type point struct{ x, y int }
 
 func translate(pt point, dir direction) point {
@@ -165,7 +180,7 @@ func (d direction) rune() rune {
 	case directionUp:
 		return '^'
 	default:
-		return 'x'
+		return '?'
 	}
 }
 
