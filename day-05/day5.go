@@ -10,15 +10,16 @@ import (
 )
 
 func SumMiddlePageNos(r io.Reader) (correct, incorrect int) {
-	scanner := bufio.NewScanner(r)
-	rules := readRules(scanner)
-	updateScanner := newUpdateScanner(scanner)
+	rules := readRules(r)
+	// Why can't you share a reader between multiple scanners?
+	updateScanner := newUpdateScanner(r)
 
 	for updateScanner.scan() {
 		update := updateScanner.update()
-		if isCorrect(update, rules) {
+		switch isCorrect(update, rules) {
+		case true:
 			correct += middlePageNo(update)
-		} else {
+		case false:
 			sort(update, rules)
 			incorrect += middlePageNo(update)
 		}
@@ -31,7 +32,8 @@ type page = string
 
 type rules map[page]struct{ isBefore, isAfter []page }
 
-func readRules(scanner *bufio.Scanner) rules {
+func readRules(r io.Reader) rules {
+	scanner := bufio.NewScanner(r)
 	rules := make(rules)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -55,9 +57,9 @@ type updateScanner struct {
 	buf     []page
 }
 
-func newUpdateScanner(scanner *bufio.Scanner) updateScanner {
+func newUpdateScanner(r io.Reader) updateScanner {
 	return updateScanner{
-		scanner: scanner,
+		scanner: bufio.NewScanner(r),
 	}
 }
 
