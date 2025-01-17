@@ -50,6 +50,8 @@ func enterLoopWithObstacle(obstacle point, l *lab) bool {
 		// we've entered a loop. If not, set it and continue
 		directions := visitedDirections[l.guard.position]
 		if directions&l.guard.direction != 0 {
+			fmt.Println("obstacle position found:", obstacle)
+			l.drawWithPath(visitedDirections, obstacle)
 			return true
 		}
 		visitedDirections[l.guard.position] = directions | l.guard.direction
@@ -143,7 +145,51 @@ func (l *lab) draw() {
 	fmt.Print(b.String())
 }
 
+func (l *lab) drawWithPath(visitedDirections map[point]direction, obstacle point) {
+	canvas := make([][]rune, l.height)
+	for i := range canvas {
+		background := make([]rune, l.width)
+		for j := range background {
+			background[j] = '.'
+		}
+		canvas[i] = background
+	}
+	for pt := range l.obstructions {
+		canvas[pt.y][pt.x] = '#'
+	}
+	for pt, dirs := range visitedDirections {
+		var horizontal, vertical bool
+		if dirs&directionUp != 0 || dirs&directionDown != 0 {
+			vertical = true
+		}
+		if dirs&directionLeft != 0 || dirs&directionRight != 0 {
+			horizontal = true
+		}
+		var ch rune
+		switch {
+		case horizontal && vertical:
+			ch = '+'
+		case horizontal:
+			ch = '-'
+		case vertical:
+			ch = '|'
+		}
+		canvas[pt.y][pt.x] = ch
+	}
+	canvas[obstacle.y][obstacle.x] = '0'
+	canvas[l.guard.position.y][l.guard.position.x] = l.guard.direction.rune()
+	var b strings.Builder
+	for _, row := range canvas {
+		b.WriteString(string(row) + "\n")
+	}
+	fmt.Print(b.String())
+}
+
 type point struct{ x, y int }
+
+func (p point) String() string {
+	return fmt.Sprintf("x=%d y=%d", p.x, p.y)
+}
 
 func translate(pt point, dir direction) point {
 	switch dir {
