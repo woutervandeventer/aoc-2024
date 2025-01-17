@@ -1,31 +1,24 @@
-package main
+package day6
 
 import (
 	"bufio"
 	"fmt"
 	"io"
-	"os"
+	"strings"
+	"unicode/utf8"
 )
 
-func main() {
-	switch os.Args[1] {
-	case "1":
-		fmt.Println(distinctPositions(os.Stdin))
-	case "2":
-		fmt.Println(obstructionPositions(os.Stdin))
-	}
-}
-
-func distinctPositions(input io.Reader) int {
+func DistinctGuardPositions(input io.Reader) int {
 	lab := readLab(input)
 	visited := make(map[point]struct{})
-	lab.walkGuard(func(g guard) {
-		visited[g.position] = struct{}{}
-	})
+	for lab.withinBounds(lab.guard.position) {
+		visited[lab.guard.position] = struct{}{}
+		lab.moveGuard()
+	}
 	return len(visited)
 }
 
-func obstructionPositions(input io.Reader) (count int) {
+func ObstructionPositions(input io.Reader) (count int) {
 	lab := readLab(input)
 	visitedDirections := make(map[point]direction)
 	lab.walkGuard(func(g guard) {
@@ -53,16 +46,20 @@ type lab struct {
 	width, height int
 }
 
-func readLab(r io.Reader) lab {
+func readLab(r io.Reader) *lab {
 	lab := lab{
 		obstructions: make(map[point]struct{}),
 	}
 	scanner := bufio.NewScanner(r)
-	for y := 0; scanner.Scan(); y++ {
-		row := scanner.Text()
-		for x, r := range row {
-			p := point{x: x, y: y}
-			switch r {
+	for scanner.Scan() {
+		line := scanner.Bytes()
+		if lab.width == 0 {
+			lab.width = utf8.RuneCount(line)
+		}
+		lab.height++
+		for x, ch := range string(line) {
+			p := point{x: x, y: lab.height - 1}
+			switch ch {
 			case '#':
 				lab.obstructions[p] = struct{}{}
 			case '^':
@@ -72,34 +69,29 @@ func readLab(r io.Reader) lab {
 				}
 			}
 		}
-		if lab.width == 0 {
-			lab.width = len(row)
-		}
-		lab.height = y
 	}
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
-	return lab
+	return &lab
 }
 
 // walkGuard calls fn until the guard has walked off the map.
 func (l *lab) walkGuard(fn func(guard)) {
-	var walkFn func()
-	walkFn = func() {
-		if l.guard.position.x >= l.width || l.guard.position.y >= l.height {
-			return
-		}
+	for l.withinBounds(l.guard.position) {
 		fn(l.guard)
-		next := translate(l.guard.position, l.guard.direction)
-		if l.isObstruction(next) {
-			l.guard.direction = turnRight(l.guard.direction)
-		} else {
-			l.guard.position = next
-		}
-		walkFn()
+		l.moveGuard()
 	}
-	walkFn()
+}
+
+func (l *lab) moveGuard() {
+	peek := translate(l.guard.position, l.guard.direction)
+	switch l.isObstruction(peek) {
+	case true:
+		l.guard.direction = turnRight(l.guard.direction)
+	case false:
+		l.guard.position = peek
+	}
 }
 
 func (l *lab) isObstruction(pt point) bool {
@@ -108,34 +100,27 @@ func (l *lab) isObstruction(pt point) bool {
 }
 
 func (l *lab) withinBounds(pt point) bool {
-	return pt.x >= 0 && pt.x < l.width && pt.y >= 0 && pt.y < l.height
+	return 0 <= pt.x && pt.x < l.width && 0 <= pt.y && pt.y < l.height
 }
 
 func (l *lab) draw() {
-	row := make([]rune, l.width)
-	for i := range row {
-		row[i] = '.'
-	}
 	canvas := make([][]rune, l.height)
 	for i := range canvas {
-		canvas[i] = append(make([]rune, 0, len(row)), row...)
+		background := make([]rune, l.width)
+		for j := range background {
+			background[j] = '.'
+		}
+		canvas[i] = background
 	}
 	for pt := range l.obstructions {
 		canvas[pt.y][pt.x] = '#'
 	}
-	switch l.guard.direction {
-	case directionUp:
-		canvas[l.guard.position.y][l.guard.position.x] = '^'
-	case directionRight:
-		canvas[l.guard.position.y][l.guard.position.x] = '>'
-	case directionDown:
-		canvas[l.guard.position.y][l.guard.position.x] = 'v'
-	case directionLeft:
-		canvas[l.guard.position.y][l.guard.position.x] = '<'
-	}
+	canvas[l.guard.position.y][l.guard.position.x] = l.guard.direction.rune()
+	var b strings.Builder
 	for _, row := range canvas {
-		fmt.Println(string(row))
+		b.WriteString(string(row) + "\n")
 	}
+	fmt.Print(b.String())
 }
 
 type guard struct {
@@ -160,6 +145,8 @@ func translate(pt point, dir direction) point {
 	}
 }
 
+type direction int
+
 const (
 	directionUp direction = 1 << iota
 	directionRight
@@ -167,7 +154,20 @@ const (
 	directionLeft
 )
 
-type direction int
+func (d direction) rune() rune {
+	switch d {
+	case directionDown:
+		return 'v'
+	case directionLeft:
+		return '<'
+	case directionRight:
+		return '>'
+	case directionUp:
+		return '^'
+	default:
+		return 'x'
+	}
+}
 
 func turnRight(dir direction) direction {
 	switch dir {

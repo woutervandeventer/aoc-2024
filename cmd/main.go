@@ -11,6 +11,7 @@ import (
 	day3 "github.com/woutervandeventer/aoc-2024/day-03"
 	day4 "github.com/woutervandeventer/aoc-2024/day-04"
 	day5 "github.com/woutervandeventer/aoc-2024/day-05"
+	day6 "github.com/woutervandeventer/aoc-2024/day-06"
 )
 
 func main() {
@@ -47,5 +48,12 @@ func main() {
 		}
 	case 5:
 		fmt.Println(day5.SumMiddlePageNos(input))
+	case 6:
+		switch part {
+		case 1:
+			fmt.Println(day6.DistinctGuardPositions(input))
+		case 2:
+			fmt.Println(day6.ObstructionPositions(input))
+		}
 	}
 }

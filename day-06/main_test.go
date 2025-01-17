@@ -1,4 +1,4 @@
-package main
+package day6
 
 import (
 	"testing"
@@ -6,10 +6,10 @@ import (
 	"github.com/woutervandeventer/aoc-2024"
 )
 
-func TestDistinctPositions(t *testing.T) {
-	aoc.TestSolution(t, aoc.OpenFile(t, "example.txt"), distinctPositions, 41)
+func TestDistinctGuardPositions(t *testing.T) {
+	aoc.TestSolution(t, aoc.OpenFile(t, "example.txt"), DistinctGuardPositions, 41)
 }
 
 func TestObstructionPositions(t *testing.T) {
-	aoc.TestSolution(t, aoc.OpenFile(t, "example.txt"), obstructionPositions, 6)
+	aoc.TestSolution(t, aoc.OpenFile(t, "example.txt"), ObstructionPositions, 6)
 }
