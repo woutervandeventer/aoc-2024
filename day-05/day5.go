@@ -9,13 +9,14 @@ import (
 	"strings"
 )
 
+// SumMiddlePageNos returns the sum of the middle page numbers for both the
+// correct and incorrect updates.
 func SumMiddlePageNos(r io.Reader) (correct, incorrect int) {
-	rules := readRules(r)
-	// Why can't you share a reader between multiple scanners?
-	updateScanner := newUpdateScanner(r)
+	scanner := bufio.NewScanner(r)
+	rules := readRules(scanner)
 
-	for updateScanner.scan() {
-		update := updateScanner.update()
+	for scanner.Scan() {
+		update := parseUpdate(scanner.Bytes())
 		switch isCorrect(update, rules) {
 		case true:
 			correct += middlePageNo(update)
@@ -30,10 +31,9 @@ func SumMiddlePageNos(r io.Reader) (correct, incorrect int) {
 
 type page = string
 
-type rules map[page]struct{ isBefore, isAfter []page }
+type rules map[page]struct{ before, after []page }
 
-func readRules(r io.Reader) rules {
-	scanner := bufio.NewScanner(r)
+func readRules(scanner *bufio.Scanner) rules {
 	rules := make(rules)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -45,34 +45,18 @@ func readRules(r io.Reader) rules {
 			panic("no \"|\" in line: " + line)
 		}
 		leftrule, rightrule := rules[left], rules[right]
-		leftrule.isBefore = append(leftrule.isBefore, right)
-		rightrule.isAfter = append(rightrule.isAfter, left)
+		leftrule.after = append(leftrule.after, right)
+		rightrule.before = append(rightrule.before, left)
 		rules[left], rules[right] = leftrule, rightrule
 	}
 	return rules
 }
 
-type updateScanner struct {
-	scanner *bufio.Scanner
-	buf     []page
-}
-
-func newUpdateScanner(r io.Reader) updateScanner {
-	return updateScanner{
-		scanner: bufio.NewScanner(r),
+func parseUpdate(b []byte) (update []page) {
+	for _, p := range bytes.Split(b, []byte(",")) {
+		update = append(update, page(p))
 	}
-}
-
-func (s updateScanner) scan() bool {
-	return s.scanner.Scan()
-}
-
-func (s updateScanner) update() []page {
-	clear(s.buf)
-	for _, b := range bytes.Split(s.scanner.Bytes(), []byte(",")) {
-		s.buf = append(s.buf, page(b))
-	}
-	return s.buf
+	return update
 }
 
 func isCorrect(update []page, rules rules) bool {
@@ -80,7 +64,7 @@ func isCorrect(update []page, rules rules) bool {
 		for j := i + 1; j < len(update); j++ {
 			otherPage := update[j]
 			rulesForPage, rulesForOtherPage := rules[page], rules[otherPage]
-			if !slices.Contains(rulesForPage.isBefore, otherPage) || !slices.Contains(rulesForOtherPage.isAfter, page) {
+			if !slices.Contains(rulesForPage.after, otherPage) || !slices.Contains(rulesForOtherPage.before, page) {
 				return false
 			}
 		}
@@ -90,14 +74,14 @@ func isCorrect(update []page, rules rules) bool {
 
 func sort(update []page, rules rules) {
 	slices.SortFunc(update, func(a, b string) int {
-		if slices.Contains(rules[a].isBefore, b) || slices.Contains(rules[b].isAfter, a) {
+		if slices.Contains(rules[a].after, b) || slices.Contains(rules[b].before, a) {
 			return -1
 		}
 		return 1
 	})
 }
 
-func middlePageNo(update []page) (n int) {
+func middlePageNo(update []page) int {
 	n, err := strconv.Atoi(update[len(update)/2])
 	if err != nil {
 		panic(err)
