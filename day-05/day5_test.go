@@ -1,18 +1,13 @@
-package main
+package day5
 
 import (
-	"os"
 	"testing"
+
+	"github.com/woutervandeventer/aoc-2024"
 )
 
 func TestSumAllMiddlePageNos(t *testing.T) {
-	f, err := os.Open("example.txt")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { f.Close() })
-	_ = f
-	correct, incorrect := sumAllMiddlePageNos(f)
+	correct, incorrect := SumMiddlePageNos(aoc.OpenFile(t, "example.txt"))
 	if correct != 143 {
 		t.Errorf("got %d want 143", correct)
 	}

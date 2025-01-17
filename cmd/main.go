@@ -10,6 +10,7 @@ import (
 	day2 "github.com/woutervandeventer/aoc-2024/day-02"
 	day3 "github.com/woutervandeventer/aoc-2024/day-03"
 	day4 "github.com/woutervandeventer/aoc-2024/day-04"
+	day5 "github.com/woutervandeventer/aoc-2024/day-05"
 )
 
 func main() {
@@ -29,22 +30,23 @@ func main() {
 	case 1:
 		switch part {
 		case 1:
-			fmt.Println(day1.TotalDistance(day1.ReadLists(os.Stdin)))
+			fmt.Println(day1.TotalDistance(day1.ReadLists(input)))
 		case 2:
-			fmt.Println(day1.SimilarityScore(day1.ReadLists(os.Stdin)))
+			fmt.Println(day1.SimilarityScore(day1.ReadLists(input)))
 		}
 	case 2:
 		fmt.Println(day2.SafeReportsWithDampener(input))
 	case 3:
-		fmt.Println(day3.AddMuls(os.Stdin))
+		fmt.Println(day3.AddMuls(input))
 	case 4:
 		switch part {
 		case 1:
-			fmt.Println(day4.CountXmas(os.Stdin))
+			fmt.Println(day4.CountXmas(input))
 		case 2:
-			fmt.Println(day4.CountXMas(os.Stdin))
+			fmt.Println(day4.CountXMas(input))
 		}
 	case 5:
+		fmt.Println(day5.SumMiddlePageNos(input))
 	case 6:
 	case 7:
 	case 8:
