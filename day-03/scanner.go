@@ -33,8 +33,6 @@ func (s scanner) scan() (token, string) {
 		return s.readNumber()
 	}
 	switch ch {
-	case 0:
-		return eof, ""
 	case '(':
 		return lparen, string(ch)
 	case ')':
@@ -42,7 +40,7 @@ func (s scanner) scan() (token, string) {
 	case ',':
 		return comma, string(ch)
 	default:
-		return corrupted, ""
+		return corrupted, string(ch)
 	}
 }
 
