@@ -57,6 +57,6 @@ func main() {
 			fmt.Println(day6.ObstructionPositions(input))
 		}
 	case 18:
-		fmt.Println(day18.MinimumStepsToExit(71, 1024, input))
+		fmt.Println(day18.MinimumStepsToExit(70, 1024, input))
 	}
 }
