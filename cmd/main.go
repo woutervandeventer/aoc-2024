@@ -12,6 +12,7 @@ import (
 	day4 "github.com/woutervandeventer/aoc-2024/day-04"
 	day5 "github.com/woutervandeventer/aoc-2024/day-05"
 	day6 "github.com/woutervandeventer/aoc-2024/day-06"
+	day18 "github.com/woutervandeventer/aoc-2024/day-18"
 )
 
 func main() {
@@ -55,5 +56,7 @@ func main() {
 		case 2:
 			fmt.Println(day6.ObstructionPositions(input))
 		}
+	case 18:
+		fmt.Println(day18.MinimumStepsToExit(71, 1024, input))
 	}
 }
