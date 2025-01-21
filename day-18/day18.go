@@ -2,20 +2,18 @@ package day18
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"strconv"
 	"strings"
 )
 
-func MinimumStepsToExit(gridSize, linesToRead int, bytePositions io.Reader) int {
+func MinimumStepsToExit(gridSize, linesToRead int, input io.Reader) int {
 	corrupted := make(map[point]bool, linesToRead)
-	scanner := bufio.NewScanner(bytePositions)
+	scanner := newPointScanner(input)
 	for range linesToRead {
-		scanner.Scan()
-		xstr, ystr, _ := strings.Cut(string(scanner.Bytes()), ",")
-		x, _ := strconv.Atoi(xstr)
-		y, _ := strconv.Atoi(ystr)
-		corrupted[point{x: x, y: y}] = true
+		scanner.scan()
+		corrupted[scanner.point] = true
 	}
 
 	// Do a BFS over the grid.
@@ -52,24 +50,18 @@ func MinimumStepsToExit(gridSize, linesToRead int, bytePositions io.Reader) int 
 	return 0
 }
 
-func BlockingByteCoordinates(gridSize, linesToRead int, bytePositions io.Reader) string {
+func BlockingByteCoordinates(gridSize, linesToRead int, input io.Reader) string {
 	corrupted := make(map[point]bool, linesToRead)
-	scanner := bufio.NewScanner(bytePositions)
+	scanner := newPointScanner(input)
 	for range linesToRead {
-		scanner.Scan()
-		xstr, ystr, _ := strings.Cut(string(scanner.Bytes()), ",")
-		x, _ := strconv.Atoi(xstr)
-		y, _ := strconv.Atoi(ystr)
-		corrupted[point{x: x, y: y}] = true
+		scanner.scan()
+		corrupted[scanner.point] = true
 	}
 
 ScanLoop:
-	for scanner.Scan() {
+	for scanner.scan() {
 		// Drop a byte
-		xstr, ystr, _ := strings.Cut(string(scanner.Bytes()), ",")
-		x, _ := strconv.Atoi(xstr)
-		y, _ := strconv.Atoi(ystr)
-		corrupted[point{x: x, y: y}] = true
+		corrupted[scanner.point] = true
 
 		// Check if the exit can still be reached.
 		queue := []point{
@@ -98,10 +90,29 @@ ScanLoop:
 			}
 		}
 		// We weren't able to find the exit, so the last byte blocked the way.
-		return xstr + "," + ystr
+		return fmt.Sprintf("%d,%d", scanner.point.x, scanner.point.y)
 	}
 
 	return ""
 }
 
 type point struct{ x, y int }
+
+type pointScanner struct {
+	scanner *bufio.Scanner
+	point   point
+}
+
+func newPointScanner(r io.Reader) *pointScanner {
+	return &pointScanner{scanner: bufio.NewScanner(r)}
+}
+
+func (ps *pointScanner) scan() bool {
+	if !ps.scanner.Scan() {
+		return false
+	}
+	xstr, ystr, _ := strings.Cut(string(ps.scanner.Bytes()), ",")
+	ps.point.x, _ = strconv.Atoi(xstr)
+	ps.point.y, _ = strconv.Atoi(ystr)
+	return true
+}
