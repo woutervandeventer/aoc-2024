@@ -57,6 +57,11 @@ func main() {
 			fmt.Println(day6.ObstructionPositions(input))
 		}
 	case 18:
-		fmt.Println(day18.MinimumStepsToExit(70, 1024, input))
+		switch part {
+		case 1:
+			fmt.Println(day18.MinimumStepsToExit(70, 1024, input))
+		case 2:
+			fmt.Println(day18.BlockingByteCoordinates(70, 1024, input))
+		}
 	}
 }

@@ -12,3 +12,9 @@ func TestMinimumStepsToExit(t *testing.T) {
 		t.Errorf("got %d minimum steps, want %d", got, want)
 	}
 }
+
+func TestBlockingByteCoordinates(t *testing.T) {
+	if got, want := day18.BlockingByteCoordinates(6, 12, aoc.OpenFile(t, "example.txt")), "6,1"; got != want {
+		t.Errorf("got %s, want %s", got, want)
+	}
+}
