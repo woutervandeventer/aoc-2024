@@ -13,6 +13,7 @@ import (
 	day5 "github.com/woutervandeventer/aoc-2024/day-05"
 	day6 "github.com/woutervandeventer/aoc-2024/day-06"
 	day18 "github.com/woutervandeventer/aoc-2024/day-18"
+	day19 "github.com/woutervandeventer/aoc-2024/day-19"
 )
 
 func main() {
@@ -63,5 +64,7 @@ func main() {
 		case 2:
 			fmt.Println(day18.BlockingByteCoordinates(70, 1024, input))
 		}
+	case 19:
+		fmt.Println(day19.PossibleDesignCount(input))
 	}
 }
