@@ -65,6 +65,6 @@ func main() {
 			fmt.Println(day18.BlockingByteCoordinates(70, 1024, input))
 		}
 	case 19:
-		fmt.Println(day19.PossibleDesignCount(input))
+		fmt.Println(day19.PossibleTowelCombinations(input))
 	}
 }

@@ -7,8 +7,11 @@ import (
 	day19 "github.com/woutervandeventer/aoc-2024/day-19"
 )
 
-func TestPossibleDesignCount(t *testing.T) {
-	if got, want := day19.PossibleDesignCount(aoc.OpenFile(t, "example.txt")), 6; got != want {
+func TestPossibleTowelCombinations(t *testing.T) {
+	if got, want := day19.PossibleTowelCombinations(aoc.OpenFile(t, "example.txt")), 16; got != want {
+		t.Errorf("got %d possible designs, want %d", got, want)
+	}
+	if got, want := day19.PossibleTowelCombinations(aoc.OpenFile(t, "input.txt")), 723524534506343; got != want {
 		t.Errorf("got %d possible designs, want %d", got, want)
 	}
 }

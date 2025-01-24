@@ -7,7 +7,7 @@ import (
 	"unicode/utf8"
 )
 
-func PossibleDesignCount(input io.Reader) (count int) {
+func PossibleTowelCombinations(input io.Reader) (count int) {
 	scanner := bufio.NewScanner(input)
 	scanner.Scan()
 	towels := strings.Split(scanner.Text(), ", ")
@@ -15,27 +15,33 @@ func PossibleDesignCount(input io.Reader) (count int) {
 	// Discard empty line
 	scanner.Scan()
 
+	// Dynamic programming: store solved subproblems in a map
+	combinations := make(map[string]int)
+
 	for scanner.Scan() {
 		design := scanner.Text()
 
-		var designPossible func(design string) bool
-		designPossible = func(design string) bool {
+		var possibleCombinations func(design string) int
+		possibleCombinations = func(design string) (n int) {
+			if combs, exists := combinations[design]; exists {
+				return combs
+			}
 			if len(design) == 0 {
-				return true
+				return 1
 			}
 			for _, towel := range towels {
-				if strings.HasPrefix(design, towel) {
-					if designPossible(design[utf8.RuneCountInString(towel):]) {
-						return true
-					}
+				if !strings.HasPrefix(design, towel) {
+					continue
 				}
+				rest := design[utf8.RuneCountInString(towel):]
+				combs := possibleCombinations(rest)
+				combinations[rest] = combs
+				n += combs
 			}
-			return false
+			return n
 		}
 
-		if designPossible(design) {
-			count++
-		}
+		count += possibleCombinations(design)
 	}
 
 	return count
