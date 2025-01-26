@@ -12,6 +12,7 @@ import (
 	day4 "github.com/woutervandeventer/aoc-2024/day-04"
 	day5 "github.com/woutervandeventer/aoc-2024/day-05"
 	day6 "github.com/woutervandeventer/aoc-2024/day-06"
+	day9 "github.com/woutervandeventer/aoc-2024/day-09"
 	day18 "github.com/woutervandeventer/aoc-2024/day-18"
 	day19 "github.com/woutervandeventer/aoc-2024/day-19"
 )
@@ -57,6 +58,8 @@ func main() {
 		case 2:
 			fmt.Println(day6.ObstructionPositions(input))
 		}
+	case 9:
+		fmt.Println(day9.Checksum(input))
 	case 18:
 		switch part {
 		case 1:

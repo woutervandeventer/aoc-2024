@@ -1,21 +1,15 @@
-package main
+package day9
 
 import (
 	"bytes"
-	"fmt"
 	"io"
-	"os"
 	"slices"
 	"strconv"
 )
 
 const freeSpace = -1
 
-func main() {
-	fmt.Printf("%d\n", checksum(os.Stdin))
-}
-
-func checksum(input io.Reader) int {
+func Checksum(input io.Reader) int {
 	m := newDiskmap(input)
 	blocks := blocks(m)
 	compacted := moveBlocks(blocks)
