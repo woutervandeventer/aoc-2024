@@ -1,62 +1,62 @@
 package day9
 
 import (
-	"bytes"
 	"io"
 	"strconv"
 )
 
-const freeSpace = -1
+func Checksum(input io.Reader) (checksum int) {
+	const freeSpace = -1
 
-func Checksum(input io.Reader) int {
-	blocks := blocks(newDiskmap(input))
+	type file struct{ index, width int }
+	var files []file
+	var blocks []int
 
-	// compact the blocks
-
-	return calculateChecksum(blocks)
-}
-
-func newDiskmap(input io.Reader) []int {
-	b, err := io.ReadAll(input)
-	if err != nil {
-		panic(err)
-	}
-	var m []int
-	for _, char := range bytes.TrimSpace(b) {
-		n, err := strconv.Atoi(string(char))
-		if err != nil {
-			panic(err)
+	bytes, _ := io.ReadAll(input)
+	for i, b := range bytes {
+		n, _ := strconv.Atoi(string(b))
+		var block int
+		switch {
+		case i%2 == 0: // on a file
+			files = append(files, file{index: len(blocks), width: n})
+			block = i / 2
+		default:
+			block = freeSpace
 		}
-		m = append(m, n)
-	}
-	return m
-}
-
-func blocks(diskmap []int) []int {
-	result := make([]int, 0, len(diskmap))
-	var blockID int
-	for i, n := range diskmap {
-		isBlock := i%2 == 0
 		for range n {
-			switch {
-			case isBlock:
-				result = append(result, blockID)
-			default:
-				result = append(result, freeSpace)
+			blocks = append(blocks, block)
+		}
+	}
+
+Files:
+	for fileID := len(files) - 1; fileID > 0; fileID-- {
+		file := files[fileID]
+		for i := 0; i < file.index-file.width; {
+			for blocks[i] != freeSpace {
+				i++
+			}
+			for j := i; j < file.index; j++ {
+				if blocks[j] != freeSpace {
+					i = j
+					break
+				}
+				if j-i+1 == file.width {
+					for n := range file.width {
+						blocks[i+n], blocks[file.index+n] = blocks[file.index+n], blocks[i+n]
+					}
+					continue Files
+				}
 			}
 		}
-		if isBlock {
-			blockID++
-		}
 	}
-	return result
-}
 
-func calculateChecksum(compacted []int) (sum int) {
-	for i, n := range compacted {
-		if n != freeSpace {
-			sum += i * n
+	// Calculate checksum
+	for i, block := range blocks {
+		if block == freeSpace {
+			continue
 		}
+		checksum += i * block
 	}
-	return sum
+
+	return checksum
 }
