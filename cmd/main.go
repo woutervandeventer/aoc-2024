@@ -13,6 +13,7 @@ import (
 	day5 "github.com/woutervandeventer/aoc-2024/day-05"
 	day6 "github.com/woutervandeventer/aoc-2024/day-06"
 	day9 "github.com/woutervandeventer/aoc-2024/day-09"
+	day12 "github.com/woutervandeventer/aoc-2024/day-12"
 	day16 "github.com/woutervandeventer/aoc-2024/day-16"
 	day18 "github.com/woutervandeventer/aoc-2024/day-18"
 	day19 "github.com/woutervandeventer/aoc-2024/day-19"
@@ -61,6 +62,8 @@ func main() {
 		}
 	case 9:
 		fmt.Println(day9.Checksum(input))
+	case 12:
+		fmt.Println(day12.TotalPrice(input))
 	case 16:
 		fmt.Println(day16.LowestScore(input))
 	case 18:
